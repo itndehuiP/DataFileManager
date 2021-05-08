@@ -1,3 +1,3 @@
 # DataFileManager
 
-A description of this package.
+Manages data in disk, using FileManager.
