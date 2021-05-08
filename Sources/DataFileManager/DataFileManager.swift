@@ -4,6 +4,8 @@ public struct DataFileManager {
     /// The first path of the directory.
     private let mainFolder = "DataFileManager"
     
+    public init() {}
+
     /**
      Builds the main directory path.
      */
