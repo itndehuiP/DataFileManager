@@ -7,22 +7,22 @@ public struct DataFileManager {
     public init() {}
 
     /**
-     Builds the main directory path.
+     Builds the main directory URL.
      */
-    private var directoryPath: URL {
+    private var directoryURL: URL {
         let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
         let folderDirectoryURL = paths.first!.appendingPathComponent(mainFolder)
         return folderDirectoryURL
     }
     
     /**
-     Gets directory path URL.
+     Gets directory URL.
      - Parameter createIfNeeded: if true, creates the directory.
      */
-    private func directoryPath(createIfNeeded: Bool) -> URL? {
+    private func directoryURL(createIfNeeded: Bool) -> URL? {
         if createIfNeeded {
             do {
-              try FileManager.default.createDirectory(at: directoryPath,
+              try FileManager.default.createDirectory(at: directoryURL,
                                                       withIntermediateDirectories: true,
                                                       attributes: nil)
             } catch {
@@ -31,18 +31,18 @@ public struct DataFileManager {
                 return nil
             }
         }
-        return directoryPath
+        return directoryURL
     }
     
     /**
-     Gets the corresponding path, using the subFolder received.
+     Gets the corresponding URL, using the folder received.
      - Parameters:
-     - subFolder: The name of the directory consultated,
+     - folder: The name of the directory consultated,
      - createIfNeeded: Bool value indicating whether the directory should be created if it doesn't exists.
-     - returns: The URL corresponding to the path created. If createIfNeeded  is true, and failed to creates the directory, returnns nil.
+     - returns: The URL corresponding to the path created. If createIfNeeded  is true, and failed to creates the directory, returns nil.
      */
-    private func folderDirectoryPath(folder: String, createIfNeeded: Bool) -> URL? {
-        guard let folderDirectoryURL = directoryPath(createIfNeeded: createIfNeeded)?.appendingPathComponent(folder, isDirectory: true) else {
+    private func folderDirectoryURL(folder: String, createIfNeeded: Bool) -> URL? {
+        guard let folderDirectoryURL = directoryURL(createIfNeeded: createIfNeeded)?.appendingPathComponent(folder, isDirectory: true) else {
             return nil
         }
         if createIfNeeded {
@@ -62,31 +62,31 @@ public struct DataFileManager {
     /**
      Gets the URL corresponding to tha path required.
      - Parameters:
+     - id: The path component to add.
      - folder: The name of the directory consultated.
-     - id: The path component of the diretory consultated.
      - createIfNeeded: Bool value indicating whether the directory should be created if it doesn't exists.
      - returns: An optional URL, the corresponding URL if the consult was succesfull, and nil if it wasn't.
      - Note: If folder is nil, the id (path component) will be created (if needed) at directory path level.
      */
-    private func dataDirectoryPath(id: String, folder: String? = nil, createIfNeeded: Bool) -> URL? {
+    private func dataDirectoryURL(id: String, folder: String? = nil, createIfNeeded: Bool) -> URL? {
         guard !id.isEmpty else { return nil }
         if let folder = folder {
-            return folderDirectoryPath(folder: folder, createIfNeeded: createIfNeeded)?.appendingPathComponent(id)
+            return folderDirectoryURL(folder: folder, createIfNeeded: createIfNeeded)?.appendingPathComponent(id)
         } else {
-            return directoryPath(createIfNeeded: createIfNeeded)?.appendingPathComponent(id)
+            return directoryURL(createIfNeeded: createIfNeeded)?.appendingPathComponent(id)
         }
     }
     
     /**
      Saves the received data in the corresponding path, using the folder and id passed.
      - Parameters:
-     - data: The data to save.
-     - folder: The name of the folder where data should be written.
+     - data: The data to write.
      - id: The name under which the data should be written.
+     - folder: The name of the directory where data should be written.
      - returns: An optional URL, the corresponding URL if the saving was succesfull, and nil if it wasn't.
      */
     public func write(data: Data?, id: String?, folder: String? = nil) -> URL? {
-        guard let data = data, let id = id, let dataPath = dataDirectoryPath(id: id, folder: folder, createIfNeeded: true) else { return nil }
+        guard let data = data, let id = id, let dataPath = dataDirectoryURL(id: id, folder: folder, createIfNeeded: true) else { return nil }
         do {
             try data.write(to: dataPath)
         } catch {
@@ -95,6 +95,30 @@ public struct DataFileManager {
             return nil
         }
         return dataPath
+    }
+    
+    /**
+     Wites data located in originURL.
+     - Parameters:
+     - originURL: The local url where data it's currently located.
+     - id: Name under which the data will be saved.
+     - folder: Directory name where data should be saved, if nil is passed, the data will be saved wihout a folder.
+     - removeFromOrigin: default value to true, if true removes data from originURL.
+     - returns: URL where data was written.
+     - Note: The URL returned just works per session.
+     */
+    public func write(originURL: URL?, id: String?, folder: String? = nil, removeFromOrigin: Bool = true) -> URL? {
+        guard let url = originURL, let data = try? Data(contentsOf: url), let id = id, let dataURL = dataDirectoryURL(id: id, folder: folder, createIfNeeded: true) else { return nil }
+        do {
+            try data.write(to: dataURL)
+            if removeFromOrigin {
+                deleteData(at: url)
+            }
+        } catch {
+            let description = "Couldn't write data from url with id: \(id) \(error.localizedDescription)"
+            print("DataFileManager [Info]: \(description)")
+        }
+        return dataURL
     }
 
     /**
@@ -105,7 +129,7 @@ public struct DataFileManager {
      - returns: nil if not data was found, or the data found.
      */
     public func loadData(id: String?, folder: String? = nil) -> Data? {
-        guard let id = id, !id.isEmpty, let dataPath = dataDirectoryPath(id: id, folder: folder, createIfNeeded: false) else { return nil }
+        guard let id = id, !id.isEmpty, let dataPath = dataDirectoryURL(id: id, folder: folder, createIfNeeded: false) else { return nil }
         return try? Data(contentsOf: dataPath)
     }
     
@@ -117,7 +141,7 @@ public struct DataFileManager {
      - returns: the session URL, if data its located with the parameters, nil if its not.
      */
     public func getURLIfExists(id: String?, folder: String? = nil) -> URL? {
-        guard let id = id, !id.isEmpty, let dataPath = dataDirectoryPath(id: id, folder: folder, createIfNeeded: false) else { return nil }
+        guard let id = id, !id.isEmpty, let dataPath = dataDirectoryURL(id: id, folder: folder, createIfNeeded: false) else { return nil }
         guard (try? Data(contentsOf: dataPath)) != nil else {
             return nil
         }
@@ -125,7 +149,7 @@ public struct DataFileManager {
     }
     
     public func deleteAll() {
-        if let mainURL = directoryPath(createIfNeeded: false), fileExists(path: mainURL.path) {
+        if let mainURL = directoryURL(createIfNeeded: false), fileExists(path: mainURL.path) {
             do {
                 try FileManager.default.removeItem(at: mainURL)
             } catch {
@@ -139,7 +163,7 @@ public struct DataFileManager {
      Deletes the directory with "folder" name.
      */
     public func delete(folder: String) {
-        guard let folderURL = folderDirectoryPath(folder: folder, createIfNeeded: false),
+        guard let folderURL = folderDirectoryURL(folder: folder, createIfNeeded: false),
               fileExists(path: folderURL.path) else { return }
         do {
             try FileManager.default.removeItem(at: folderURL)
@@ -155,12 +179,26 @@ public struct DataFileManager {
      - id: The name under which the data its saved.
      */
     public func deleteData(id: String?, folder: String? = nil) {
-        guard let id = id, let dataURL = dataDirectoryPath(id: id, folder: folder, createIfNeeded: false), fileExists(path: dataURL.path) else { return }
+        guard let id = id, let dataURL = dataDirectoryURL(id: id, folder: folder, createIfNeeded: false), fileExists(path: dataURL.path) else { return }
         do {
             try FileManager.default.removeItem(at: dataURL)
         } catch {
             let description = "Failed to delete file with id: \(id). \(error.localizedDescription)"
             print("Image File Manager [Info]: \(description)")
+        }
+    }
+    
+    /**
+     Deletes data at URL.
+     */
+    private func deleteData(at originURL: URL) {
+        let path = originURL.path
+        guard fileExists(path: path) else { return }
+        do {
+            try FileManager.default.removeItem(at: originURL)
+        } catch {
+            let description = "Failed to delete data in url passed. \(error.localizedDescription)"
+            print("DataFileManager [Info]: \(description)")
         }
     }
     
