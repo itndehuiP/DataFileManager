@@ -27,7 +27,7 @@ public struct DataFileManager {
                                                       attributes: nil)
             } catch {
                 let description = "Couldn't create main directory \(error.localizedDescription)"
-                print("Data File Manager directoryPath: \(description)")
+                print("DataFileManager directoryPath: \(description)")
                 return nil
             }
         }
@@ -52,7 +52,7 @@ public struct DataFileManager {
                                                         attributes: nil)
             } catch {
                 let description = "Couldn't create subFolder directory \(error.localizedDescription)"
-                print("Data File Manager subFolderDirectoryPath: \(description)")
+                print("DataFileManager subFolderDirectoryPath: \(description)")
                 return nil
             }
         }
@@ -91,7 +91,7 @@ public struct DataFileManager {
             try data.write(to: dataPath)
         } catch {
             let description = "Couldn't complete writing with id: \(id). \(error.localizedDescription)"
-            print("Data File Manager [Info]: \(description)")
+            print("DataFileManager [Info]: \(description)")
             return nil
         }
         return dataPath
@@ -148,13 +148,24 @@ public struct DataFileManager {
         return dataPath
     }
     
+    public func pathsContents(folder: String) -> [String]? {
+        guard let folderURL = folderDirectoryURL(folder: folder, createIfNeeded: false), let directoryContents = try? FileManager.default.contentsOfDirectory(atPath: folderURL.path) else {
+            return nil
+        }
+        return directoryContents
+    }
+    
+    public func firstPath(folder: String) -> String? {
+        return pathsContents(folder: folder)?.first
+    }
+    
     public func deleteAll() {
         if let mainURL = directoryURL(createIfNeeded: false), fileExists(path: mainURL.path) {
             do {
                 try FileManager.default.removeItem(at: mainURL)
             } catch {
                 let description = "Failed to delete main folder. \(error.localizedDescription)"
-                print("Data File Manager [Info]: \(description)")
+                print("DataFileManager [Info]: \(description)")
             }
         }
     }
@@ -169,7 +180,7 @@ public struct DataFileManager {
             try FileManager.default.removeItem(at: folderURL)
         } catch {
             let description = "Failed to delete album folder: \(folder). \(error.localizedDescription)"
-            print("Data File Manager [Info]: \(description)")
+            print("DataFileManager [Info]: \(description)")
         }
     }
     
@@ -184,7 +195,7 @@ public struct DataFileManager {
             try FileManager.default.removeItem(at: dataURL)
         } catch {
             let description = "Failed to delete file with id: \(id). \(error.localizedDescription)"
-            print("Image File Manager [Info]: \(description)")
+            print("DataFileManager [Info]: \(description)")
         }
     }
     

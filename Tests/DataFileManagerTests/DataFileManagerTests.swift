@@ -87,8 +87,24 @@ final class DataFileManagerTests: XCTestCase {
         dataManager.delete(folder: "FolderC")
         dataLoaded = dataManager.loadData(id: "Test", folder: "FolderC")
         XCTAssertNil(dataLoaded)
-    } 
-
+    }
+    
+    func testGetPaths() {
+        let mockA = DataMock(name: "Test", value: 1)
+        let mockB = DataMock(name: "BTes", value: 0)
+        let dataA = try? JSONEncoder().encode(mockA)
+        let dataB = try? JSONEncoder().encode(mockB)
+        let folder = "FolderMaster"
+        XCTAssertNotNil(dataA)
+        XCTAssertNotNil(dataB)
+        XCTAssertNotNil(dataManager.write(data: dataA, id: mockB.name, folder: folder))
+        XCTAssertNotNil(dataManager.write(data: dataB, id: mockA.name, folder: folder))
+        let paths = dataManager.pathsContents(folder: folder)
+        XCTAssert(paths?.first == mockA.name)
+        XCTAssert(paths?.last == mockB.name)
+        dataManager.delete(folder: folder)
+    }
+    
     static var allTests = [
         ("testSaveWithoutFolder", testSaveWithoutFolder),
     ]
